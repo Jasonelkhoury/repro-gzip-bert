@@ -1,24 +1,77 @@
 #!/bin/bash
-set -e
+set -euo pipefail
+
+cd /workspace/npc_gzip/original_codebase
 
 mkdir -p /workspace/results
 
-echo "=========================================================="
-echo "PARTIE 1 : Code historique original (original_codebase)"
-echo "=========================================================="
-cd /workspace/npc_gzip/original_codebase
+START=$(date +%s)
 
-echo "20News (5-shot, 200 test)..."
-python main_text.py --dataset 20News --compressor gzip --num_train 5 --num_test 200 --para > /workspace/results/orig_20News_5shot.log 2>&1
+MODE="${MODE:-pilot}"
 
-echo "AG_NEWS (5-shot, 500 test)..."
-python main_text.py --dataset AG_NEWS --compressor gzip --num_train 5 --num_test 500 --para > /workspace/results/orig_AGNews_${shot}shot.log 2>&1
+echo "======================================"
+echo "       NPC-GZIP REPRODUCTION"
+echo "======================================"
+echo "Mode: $MODE"
+echo "Dataset: DBpedia (custom)"
+echo "Data directory: /workspace/data/DBpedia"
+echo "Classes: 14"
+echo ""
 
+if [ "$MODE" = "pilot" ]; then
 
-echo "=========================================================="
-echo "PARTIE 2 : Package officiel corrigé (npc_gzip)"
-echo "=========================================================="
-# python /workspace/compare_official_fix.py > /workspace/results/fixed_official_comparison.log 2>&1
+    echo "=== PILOT TEST DBpedia ==="
+    echo "100 test examples x 560000 training examples"
 
-echo "=== Terminé ! Résultats disponibles dans /workspace/results ==="
-grep -H "Accuracy" /workspace/results/*.log
+    OUTPUT_DIR="/workspace/results/dbpedia_pilot"
+    mkdir -p "$OUTPUT_DIR"
+
+    python -u main_text.py \
+        --dataset custom \
+        --data_dir /workspace/data/DBpedia \
+        --class_num 14 \
+        --compressor gzip \
+        --all_train \
+        --record \
+        --para \
+        --test_idx_start 0 \
+        --test_idx_end 100 \
+        --output_dir "$OUTPUT_DIR" \
+        2>&1 | tee /workspace/results/dbpedia_pilot.log
+
+elif [ "$MODE" = "full" ]; then
+
+    echo "=== FULL TEST DBpedia ==="
+    echo "70000 test examples x 560000 training examples"
+
+    OUTPUT_DIR="/workspace/results/dbpedia_full"
+    mkdir -p "$OUTPUT_DIR"
+
+    python -u main_text.py \
+        --dataset custom \
+        --data_dir /workspace/data/DBpedia \
+        --class_num 14 \
+        --compressor gzip \
+        --all_train \
+        --all_test \
+        --record \
+        --para \
+        --output_dir "$OUTPUT_DIR" \
+        2>&1 | tee /workspace/results/dbpedia_full.log
+
+else
+    echo "ERROR: MODE must be pilot or full"
+    exit 1
+fi
+
+END=$(date +%s)
+DURATION=$((END - START))
+
+echo ""
+echo "======================================"
+echo "             RESULTS"
+echo "======================================"
+echo "Execution time: ${DURATION} seconds"
+echo "Execution time: $((DURATION / 60)) minutes"
+echo "======================================"
+echo "=== END ==="
