@@ -8,6 +8,8 @@ mkdir -p /workspace/results
 START=$(date +%s)
 
 MODE="${MODE:-pilot}"
+NUM_WORKERS="${NUM_WORKERS:-6}"
+export NUM_WORKERS
 
 echo "======================================"
 echo "       NPC-GZIP REPRODUCTION"
@@ -16,6 +18,7 @@ echo "Mode: $MODE"
 echo "Dataset: DBpedia (custom)"
 echo "Data directory: /workspace/data/DBpedia"
 echo "Classes: 14"
+echo "Number of workers: $NUM_WORKERS"
 echo ""
 
 if [ "$MODE" = "pilot" ]; then
